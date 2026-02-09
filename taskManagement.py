@@ -20,17 +20,6 @@ db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
 class User(db.Model):
-    """
-    User model for authentication and task ownership.
-
-    Attributes:
-        id: Unique identifier
-        username: Unique username for login
-        email: User's email address
-        password_hash: Hashed password for security
-        created_at: Account creation timestamp
-        tasks: Relationship to user's tasks
-    """
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -40,15 +29,12 @@ class User(db.Model):
     tasks = db.relationship('Task', backref='user', lazy=True)
 
     def set_password(self, password):
-        """Hash and set the user's password."""
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        """Verify the provided password against the stored hash."""
         return check_password_hash(self.password_hash, password)
 
     def to_dict(self):
-        """Convert user object to dictionary for API responses."""
         return {
             'id': self.id,
             'username': self.username,
@@ -57,20 +43,7 @@ class User(db.Model):
         }
 
 class Task(db.Model):
-    """
-    Task model representing individual tasks in the system.
-
-    Attributes:
-        id: Unique identifier
-        title: Task title
-        description: Detailed task description
-        status: Current status (pending, in_progress, completed)
-        priority: Task priority (low, medium, high)
-        due_date: Optional due date
-        created_at: Task creation timestamp
-        updated_at: Last update timestamp
-        user_id: Foreign key to owning user
-    """
+  
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -82,7 +55,6 @@ class Task(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def to_dict(self):
-        """Convert task object to dictionary for API responses."""
         return {
             'id': self.id,
             'title': self.title,
@@ -95,15 +67,7 @@ class Task(db.Model):
         }
 
 def validate_registration_data(data):
-    """
-    Validate user registration data.
 
-    Args:
-        data: Dictionary containing username, email, password
-
-    Returns:
-        dict: {'valid': bool, 'errors': dict of field errors}
-    """
     errors = {}
 
     if not data.get('username'):
@@ -126,16 +90,7 @@ def validate_registration_data(data):
     return {'valid': len(errors) == 0, 'errors': errors}
 
 def validate_task_data(data, update=False):
-    """
-    Validate task data for creation or update.
-
-    Args:
-        data: Dictionary containing task fields
-        update: Boolean indicating if this is an update operation
-
-    Returns:
-        dict: {'valid': bool, 'errors': dict of field errors}
-    """
+ 
     errors = {}
 
     if not update or 'title' in data:
@@ -163,16 +118,7 @@ def validate_task_data(data, update=False):
     return {'valid': len(errors) == 0, 'errors': errors}
 
 def get_filtered_tasks(user_id, filters):
-    """
-    Get filtered and sorted tasks for a user.
-
-    Args:
-        user_id: ID of the user
-        filters: Dictionary containing filter parameters
-
-    Returns:
-        SQLAlchemy query object
-    """
+   
     query = Task.query.filter_by(user_id=user_id)
 
     # Apply filters
@@ -325,21 +271,6 @@ def refresh_token():
 @app.route('/api/tasks', methods=['GET'])
 @jwt_required()
 def get_tasks():
-    """
-    Get paginated list of user's tasks with filtering and sorting.
-
-    Query Parameters:
-        page: Page number (default: 1)
-        per_page: Items per page (default: 10)
-        status: Filter by status
-        priority: Filter by priority
-        search: Search in title and description
-        sort_by: Sort field (default: created_at)
-        sort_order: Sort order (asc/desc, default: desc)
-
-    Returns:
-        JSON response with tasks and pagination info
-    """
     current_user_id = get_jwt_identity()
 
     # Parse query parameters
@@ -380,21 +311,7 @@ def get_tasks():
 @app.route('/api/tasks', methods=['POST'])
 @jwt_required()
 def create_task():
-    """
-    Create a new task for the authenticated user.
-
-    Request Body:
-        {
-            "title": "string",
-            "description": "string (optional)",
-            "status": "pending|in_progress|completed (optional)",
-            "priority": "low|medium|high (optional)",
-            "due_date": "ISO date string (optional)"
-        }
-
-    Returns:
-        JSON response with created task
-    """
+   
     current_user_id = get_jwt_identity()
     data = request.get_json()
 
@@ -431,15 +348,7 @@ def create_task():
 @app.route('/api/tasks/<int:task_id>', methods=['GET'])
 @jwt_required()
 def get_task(task_id):
-    """
-    Get a specific task by ID.
-
-    Args:
-        task_id: ID of the task to retrieve
-
-    Returns:
-        JSON response with task data
-    """
+  
     current_user_id = get_jwt_identity()
 
     task = Task.query.filter_by(id=task_id, user_id=current_user_id).first()
@@ -460,18 +369,7 @@ def get_task(task_id):
 @app.route('/api/tasks/<int:task_id>', methods=['PUT'])
 @jwt_required()
 def update_task(task_id):
-    """
-    Update an existing task.
-
-    Args:
-        task_id: ID of the task to update
-
-    Request Body:
-        Same as create, but all fields optional
-
-    Returns:
-        JSON response with updated task
-    """
+  
     current_user_id = get_jwt_identity()
     data = request.get_json()
 
@@ -517,15 +415,7 @@ def update_task(task_id):
 @app.route('/api/tasks/<int:task_id>', methods=['DELETE'])
 @jwt_required()
 def delete_task(task_id):
-    """
-    Delete a task.
-
-    Args:
-        task_id: ID of the task to delete
-
-    Returns:
-        JSON response confirming deletion
-    """
+  
     current_user_id = get_jwt_identity()
 
     task = Task.query.filter_by(id=task_id, user_id=current_user_id).first()
@@ -566,34 +456,7 @@ def index():
     """Home page with login/register options."""
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Task Management System</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-            .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 500px; width: 100%; text-align: center; }
-            h1 { color: #333; margin-bottom: 1rem; }
-            p { color: #666; margin-bottom: 2rem; }
-            .btn { display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin: 0 10px; transition: background 0.3s; }
-            .btn:hover { background: #5a6fd8; }
-            .btn.secondary { background: #6c757d; }
-            .btn.secondary:hover { background: #5a6268; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>📋 Task Management System</h1>
-            <p>Organize your tasks efficiently with our comprehensive task management platform.</p>
-            <a href="{{ url_for('web_register') }}" class="btn">Register</a>
-            <a href="{{ url_for('web_login') }}" class="btn secondary">Login</a>
-        </div>
-    </body>
-    </html>
-    """)
+    return render_template_string()
 
 # Register page
 @app.route('/register', methods=['GET', 'POST'])
@@ -633,65 +496,7 @@ def web_register():
         flash('Registration successful! Please log in.', 'success')
         return redirect(url_for('web_login'))
 
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Register - Task Management</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-            .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
-            h1 { color: #333; text-align: center; margin-bottom: 1.5rem; }
-            .form-group { margin-bottom: 1rem; }
-            label { display: block; margin-bottom: 0.5rem; color: #555; }
-            input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
-            .btn { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 1rem; }
-            .btn:hover { background: #5a6fd8; }
-            .link { text-align: center; margin-top: 1rem; }
-            .link a { color: #667eea; text-decoration: none; }
-            .alert { padding: 10px; border-radius: 5px; margin-bottom: 1rem; }
-            .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-            .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>📝 Register</h1>
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            <form method="POST">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" name="email" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <div class="form-group">
-                    <label for="confirm_password">Confirm Password</label>
-                    <input type="password" id="confirm_password" name="confirm_password" required>
-                </div>
-                <button type="submit" class="btn">Register</button>
-            </form>
-            <div class="link">
-                <a href="{{ url_for('web_login') }}">Already have an account? Login</a>
-            </div>
-        </div>
-    </body>
-    </html>
-    """)
+    return render_template_string()
 
 # Login page
 @app.route('/login', methods=['GET', 'POST'])
@@ -716,57 +521,7 @@ def web_login():
         flash('Login successful!', 'success')
         return redirect(url_for('dashboard'))
 
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Login - Task Management</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-            .container { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-width: 400px; width: 100%; }
-            h1 { color: #333; text-align: center; margin-bottom: 1.5rem; }
-            .form-group { margin-bottom: 1rem; }
-            label { display: block; margin-bottom: 0.5rem; color: #555; }
-            input[type="text"], input[type="password"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
-            .btn { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; margin-top: 1rem; }
-            .btn:hover { background: #5a6fd8; }
-            .link { text-align: center; margin-top: 1rem; }
-            .link a { color: #667eea; text-decoration: none; }
-            .alert { padding: 10px; border-radius: 5px; margin-bottom: 1rem; }
-            .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-            .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <h1>🔑 Login</h1>
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-            <form method="POST">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <button type="submit" class="btn">Login</button>
-            </form>
-            <div class="link">
-                <a href="{{ url_for('web_register') }}">Don't have an account? Register</a>
-            </div>
-        </div>
-    </body>
-    </html>
-    """)
+    return render_template_string()
 
 # Dashboard
 @app.route('/dashboard')
@@ -779,101 +534,7 @@ def dashboard():
     # Get user's tasks
     tasks = Task.query.filter_by(user_id=user_id).order_by(Task.created_at.desc()).all()
 
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Dashboard - Task Management</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
-            .header { background: #667eea; color: white; padding: 1rem; display: flex; justify-content: space-between; align-items: center; }
-            .header h1 { margin: 0; }
-            .logout-btn { background: #dc3545; color: white; padding: 8px 16px; text-decoration: none; border-radius: 5px; }
-            .logout-btn:hover { background: #c82333; }
-            .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
-            .welcome { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 2rem; }
-            .actions { display: flex; gap: 1rem; margin-bottom: 2rem; }
-            .btn { padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; display: inline-block; }
-            .btn:hover { background: #218838; }
-            .btn-secondary { background: #6c757d; }
-            .btn-secondary:hover { background: #5a6268; }
-            .tasks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
-            .task-card { background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .task-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; }
-            .task-description { color: #666; margin-bottom: 1rem; }
-            .task-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; color: #888; }
-            .status { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-            .status-pending { background: #fff3cd; color: #856404; }
-            .status-in_progress { background: #cce5ff; color: #004085; }
-            .status-completed { background: #d4edda; color: #155724; }
-            .priority { padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
-            .priority-low { background: #e2e3e5; color: #383d41; }
-            .priority-medium { background: #fff3cd; color: #856404; }
-            .priority-high { background: #f8d7da; color: #721c24; }
-            .no-tasks { text-align: center; color: #666; font-style: italic; padding: 2rem; }
-            .alert { padding: 10px; border-radius: 5px; margin-bottom: 1rem; }
-            .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-            .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>📋 Task Management Dashboard</h1>
-            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
-        </div>
-        <div class="container">
-            <div class="welcome">
-                <h2>Welcome, {{ user.username }}!</h2>
-                <p>Manage your tasks efficiently.</p>
-            </div>
-
-            {% with messages = get_flashed_messages(with_categories=true) %}
-                {% if messages %}
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>
-                    {% endfor %}
-                {% endif %}
-            {% endwith %}
-
-            <div class="actions">
-                <a href="{{ url_for('create_task_web') }}" class="btn">➕ Create New Task</a>
-                <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">🔄 Refresh Tasks</a>
-            </div>
-
-            <h3>Your Tasks</h3>
-            {% if tasks %}
-            <div class="tasks-grid">
-                {% for task in tasks %}
-                <div class="task-card">
-                    <div class="task-title">{{ task.title }}</div>
-                    <div class="task-description">{{ task.description or 'No description' }}</div>
-                    <div class="task-meta">
-                        <span class="status status-{{ task.status }}">{{ task.status.replace('_', ' ').title() }}</span>
-                        <span class="priority priority-{{ task.priority }}">{{ task.priority.title() }}</span>
-                    </div>
-                    {% if task.due_date %}
-                    <div class="task-meta">
-                        <small>Due: {{ task.due_date.strftime('%Y-%m-%d') }}</small>
-                    </div>
-                    {% endif %}
-                    <div style="margin-top: 1rem;">
-                        <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.9rem;">Edit</a>
-                        <a href="{{ url_for('delete_task_web', task_id=task.id) }}" class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.9rem; background: #dc3545;" onclick="return confirm('Are you sure you want to delete this task?')">Delete</a>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="no-tasks">
-                <p>You don't have any tasks yet. <a href="{{ url_for('create_task_web') }}">Create your first task</a>!</p>
-            </div>
-            {% endif %}
-        </div>
-    </body>
-    </html>
-    """, user=user, tasks=tasks)
+    return render_template_string(user=user, tasks=tasks)
 
 # Create task page
 @app.route('/create-task', methods=['GET', 'POST'])
@@ -907,82 +568,7 @@ def create_task_web():
         flash('Task created successfully!', 'success')
         return redirect(url_for('dashboard'))
 
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Create Task - Task Management</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
-            .header { background: #667eea; color: white; padding: 1rem; }
-            .header h1 { margin: 0; }
-            .container { max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
-            .form-card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .form-group { margin-bottom: 1rem; }
-            label { display: block; margin-bottom: 0.5rem; color: #555; font-weight: bold; }
-            input[type="text"], textarea, select, input[type="date"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
-            textarea { resize: vertical; min-height: 100px; }
-            .btn { padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
-            .btn:hover { background: #218838; }
-            .btn-secondary { background: #6c757d; margin-left: 1rem; }
-            .btn-secondary:hover { background: #5a6268; }
-            .alert { padding: 10px; border-radius: 5px; margin-bottom: 1rem; }
-            .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-            .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>➕ Create New Task</h1>
-        </div>
-        <div class="container">
-            <div class="form-card">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-                <form method="POST">
-                    <div class="form-group">
-                        <label for="title">Title *</label>
-                        <input type="text" id="title" name="title" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="description">Description</label>
-                        <textarea id="description" name="description"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="status">Status</label>
-                        <select id="status" name="status">
-                            <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="priority">Priority</label>
-                        <select id="priority" name="priority">
-                            <option value="low">Low</option>
-                            <option value="medium">Medium</option>
-                            <option value="high">High</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="due_date">Due Date</label>
-                        <input type="date" id="due_date" name="due_date">
-                    </div>
-                    <button type="submit" class="btn">Create Task</button>
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
-                </form>
-            </div>
-        </div>
-    </body>
-    </html>
-    """)
+    return render_template_string()
 
 # Edit task page
 @app.route('/edit-task/<int:task_id>', methods=['GET', 'POST'])
@@ -1018,82 +604,7 @@ def edit_task(task_id):
         flash('Task updated successfully!', 'success')
         return redirect(url_for('dashboard'))
 
-    return render_template_string("""
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Edit Task - Task Management</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
-            .header { background: #667eea; color: white; padding: 1rem; }
-            .header h1 { margin: 0; }
-            .container { max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
-            .form-card { background: white; padding: 2rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-            .form-group { margin-bottom: 1rem; }
-            label { display: block; margin-bottom: 0.5rem; color: #555; font-weight: bold; }
-            input[type="text"], textarea, select, input[type="date"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
-            textarea { resize: vertical; min-height: 100px; }
-            .btn { padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; }
-            .btn:hover { background: #218838; }
-            .btn-secondary { background: #6c757d; margin-left: 1rem; }
-            .btn-secondary:hover { background: #5a6268; }
-            .alert { padding: 10px; border-radius: 5px; margin-bottom: 1rem; }
-            .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-            .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>✏️ Edit Task</h1>
-        </div>
-        <div class="container">
-            <div class="form-card">
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">{{ message }}</div>
-                        {% endfor %}
-                    {% endif %}
-                {% endwith %}
-                <form method="POST">
-                    <div class="form-group">
-                        <label for="title">Title *</label>
-                        <input type="text" id="title" name="title" value="{{ task.title }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="description">Description</label>
-                        <textarea id="description" name="description">{{ task.description or '' }}</textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="status">Status</label>
-                        <select id="status" name="status">
-                            <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>Pending</option>
-                            <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-                            <option value="completed" {% if task.status == 'completed' %}selected{% endif %}>Completed</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="priority">Priority</label>
-                        <select id="priority" name="priority">
-                            <option value="low" {% if task.priority == 'low' %}selected{% endif %}>Low</option>
-                            <option value="medium" {% if task.priority == 'medium' %}selected{% endif %}>Medium</option>
-                            <option value="high" {% if task.priority == 'high' %}selected{% endif %}>High</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="due_date">Due Date</label>
-                        <input type="date" id="due_date" name="due_date" value="{{ task.due_date.strftime('%Y-%m-%d') if task.due_date else '' }}">
-                    </div>
-                    <button type="submit" class="btn">Update Task</button>
-                    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
-                </form>
-            </div>
-        </div>
-    </body>
-    </html>
-    """, task=task)
+    return render_template_string(task=task)
 
 # Delete task
 @app.route('/delete-task/<int:task_id>')
@@ -1165,27 +676,4 @@ if __name__ == '__main__':
     # Run the application
     app.run(debug=True, host='0.0.0.0', port=5000)
 
-"""
-API DOCUMENTATION
-=================
 
-Authentication Endpoints:
-- POST /api/auth/register - Register new user
-- POST /api/auth/login - Login and get tokens
-- POST /api/auth/refresh - Refresh access token
-
-Task Endpoints:
-- GET /api/tasks - List tasks with filtering/pagination
-- POST /api/tasks - Create new task
-- GET /api/tasks/<id> - Get specific task
-- PUT /api/tasks/<id> - Update task
-- DELETE /api/tasks/<id> - Delete task
-
-Usage Examples:
-1. Register: POST /api/auth/register with {"username": "test", "email": "test@example.com", "password": "password123"}
-2. Login: POST /api/auth/login with {"username": "test", "password": "password123"}
-3. Create Task: POST /api/tasks with Authorization header and {"title": "My Task", "description": "Task details"}
-4. Get Tasks: GET /api/tasks with Authorization header
-
-To run: python taskManagement.py
-"""
