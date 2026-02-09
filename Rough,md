@@ -1,4 +1,25 @@
+"""
+Task Management REST API
+====================================================
 
+
+Features implemented:
+- User authentication with JWT
+- Task CRUD operations
+- Filtering, sorting, and pagination
+- Input validation and error handling
+- Comprehensive API documentation
+- Unit tests (basic structure included)
+
+The code is organized into sections for easy understanding:
+1. Imports and Configuration
+2. Database Models
+3. Authentication Utilities
+4. Task Management Logic
+5. API Routes
+6. Error Handling
+7. Main Application Setup
+"""
 
 from flask import Flask, request, jsonify, make_response, render_template_string, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
@@ -22,7 +43,17 @@ db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
 class User(db.Model):
+    """
+    User model for authentication and task ownership.
 
+    Attributes:
+        id: Unique identifier
+        username: Unique username for login
+        email: User's email address
+        password_hash: Hashed password for security
+        created_at: Account creation timestamp
+        tasks: Relationship to user's tasks
+    """
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -49,7 +80,20 @@ class User(db.Model):
         }
 
 class Task(db.Model):
+    """
+    Task model representing individual tasks in the system.
 
+    Attributes:
+        id: Unique identifier
+        title: Task title
+        description: Detailed task description
+        status: Current status (pending, in_progress, completed)
+        priority: Task priority (low, medium, high)
+        due_date: Optional due date
+        created_at: Task creation timestamp
+        updated_at: Last update timestamp
+        user_id: Foreign key to owning user
+    """
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
@@ -74,7 +118,15 @@ class Task(db.Model):
         }
 
 def validate_registration_data(data):
-   
+    """
+    Validate user registration data.
+
+    Args:
+        data: Dictionary containing username, email, password
+
+    Returns:
+        dict: {'valid': bool, 'errors': dict of field errors}
+    """
     errors = {}
 
     if not data.get('username'):
@@ -97,7 +149,16 @@ def validate_registration_data(data):
     return {'valid': len(errors) == 0, 'errors': errors}
 
 def validate_task_data(data, update=False):
-  
+    """
+    Validate task data for creation or update.
+
+    Args:
+        data: Dictionary containing task fields
+        update: Boolean indicating if this is an update operation
+
+    Returns:
+        dict: {'valid': bool, 'errors': dict of field errors}
+    """
     errors = {}
 
     if not update or 'title' in data:
@@ -125,7 +186,16 @@ def validate_task_data(data, update=False):
     return {'valid': len(errors) == 0, 'errors': errors}
 
 def get_filtered_tasks(user_id, filters):
-  
+    """
+    Get filtered and sorted tasks for a user.
+
+    Args:
+        user_id: ID of the user
+        filters: Dictionary containing filter parameters
+
+    Returns:
+        SQLAlchemy query object
+    """
     query = Task.query.filter_by(user_id=user_id)
 
     # Apply filters
