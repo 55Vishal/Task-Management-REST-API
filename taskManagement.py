@@ -1,29 +1,3 @@
-"""
-Task Management REST API - Humanized Implementation
-====================================================
-
-This is a complete, human-readable implementation of a Task Management REST API
-built with Flask. The code is structured with clear comments, logical sections,
-and follows best practices for readability and maintainability.
-
-Features implemented:
-- User authentication with JWT
-- Task CRUD operations
-- Filtering, sorting, and pagination
-- Input validation and error handling
-- Comprehensive API documentation
-- Unit tests (basic structure included)
-
-The code is organized into sections for easy understanding:
-1. Imports and Configuration
-2. Database Models
-3. Authentication Utilities
-4. Task Management Logic
-5. API Routes
-6. Error Handling
-7. Main Application Setup
-"""
-
 from flask import Flask, request, jsonify, make_response, render_template_string, redirect, url_for, session, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, create_refresh_token, get_jwt_identity
